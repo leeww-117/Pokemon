@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>精靈屬性心理測驗</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f0f2f5;
+            touch-action: manipulation; /* 優化觸控 */
+        }
+
+        /* 寶可夢屬性顏色定義 */
+        .type-normal { background-color: #A8A77A; }
+        .type-fire { background-color: #EE8130; }
+        .type-water { background-color: #6390F0; }
+        .type-electric { background-color: #F7D02C; }
+        .type-grass { background-color: #7AC74C; }
+        .type-ice { background-color: #96D9D6; }
+        .type-fighting { background-color: #C22E28; }
+        .type-poison { background-color: #A33EA1; }
+        .type-ground { background-color: #E2BF65; }
+        .type-flying { background-color: #A98FF3; }
+        .type-psychic { background-color: #F95587; }
+        .type-bug { background-color: #A6B91A; }
+        .type-rock { background-color: #B6A136; }
+        .type-ghost { background-color: #735797; }
+        .type-dragon { background-color: #6F35FC; }
+        .type-dark { background-color: #705746; }
+        .type-steel { background-color: #B7B7CE; }
+        .type-fairy { background-color: #D685AD; }
+
+        .pokeball-bg {
+            background: linear-gradient(180deg, #FF3E3E 50%, #FFFFFF 50%);
+            position: relative;
+        }
+        
+        .pokeball-btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            background: white;
+            border: 4px solid #333;
+            border-radius: 50%;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 防止 iOS 點擊高亮 */
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+
+    <!-- 主容器 -->
+    <div id="app" class="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden relative min-h-[600px] flex flex-col">
+        
+        <!-- 頂部裝飾 (Pokeball Style) -->
+        <div class="h-4 bg-red-500 w-full"></div>
+        <div class="h-2 bg-gray-800 w-full"></div>
+
+        <!-- 1. 開始畫面 -->
+        <div id="start-screen" class="flex-1 flex flex-col items-center justify-center p-8 text-center fade-in">
+            <div class="w-24 h-24 mb-6 rounded-full border-8 border-gray-800 bg-gradient-to-b from-red-500 to-white relative flex items-center justify-center shadow-lg">
+                <div class="w-8 h-8 bg-white rounded-full border-4 border-gray-800 z-10"></div>
+                <div class="absolute w-full h-2 bg-gray-800 top-1/2 transform -translate-y-1/2"></div>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">精靈屬性<br>心理測驗</h1>
+            <p class="text-gray-500 mb-8">回答 30 道問題<br>找出你的靈魂屬性組合</p>
+            <div class="bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg text-sm mb-8">
+                <span class="font-bold">✨ 題庫總數：80題</span><br>
+                <span>隨機抽取：30題</span>
+            </div>
+            <button onclick="startGame()" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-8 rounded-2xl shadow-lg transition transform hover:scale-105 active:scale-95 text-lg">
+                開始測驗
+            </button>
+        </div>
+
+        <!-- 2. 測驗畫面 -->
+        <div id="quiz-screen" class="hidden flex-1 flex flex-col p-6 fade-in">
+            <!-- 進度條 -->
+            <div class="flex justify-between text-xs text-gray-400 font-bold mb-1">
+                <span id="progress-text">Question 1/30</span>
+                <span id="progress-percent">0%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2.5 mb-8">
+                <div id="progress-bar" class="bg-red-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+
+            <!-- 問題區域 -->
+            <div class="flex-1 flex flex-col justify-center">
+                <h2 id="question-text" class="text-2xl font-bold text-gray-800 mb-8 leading-relaxed">
+                    問題載入中...
+                </h2>
+                
+                <!-- 選項列表 -->
+                <div id="options-container" class="space-y-4">
+                    <!-- 選項按鈕會由 JS 生成 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. 計算中畫面 -->
+        <div id="loading-screen" class="hidden flex-1 flex flex-col items-center justify-center p-8 text-center fade-in">
+            <div class="animate-spin w-16 h-16 border-4 border-red-500 border-t-transparent rounded-full mb-4"></div>
+            <h3 class="text-xl font-bold text-gray-700">正在分析靈魂波長...</h3>
+            <p class="text-gray-400 text-sm mt-2">尋找匹配的屬性</p>
+        </div>
+
+        <!-- 4. 結果畫面 -->
+        <div id="result-screen" class="hidden flex-1 flex flex-col p-6 fade-in overflow-y-auto">
+            <div class="text-center mb-6">
+                <p class="text-gray-500 text-sm uppercase tracking-wider mb-1">Your Result</p>
+                <h2 class="text-2xl font-bold text-gray-800">你的精靈屬性</h2>
+            </div>
+
+            <!-- 屬性展示卡片 -->
+            <div class="bg-gray-50 rounded-2xl p-6 border-2 border-gray-100 shadow-sm mb-6 flex flex-col items-center">
+                <div class="flex items-center justify-center gap-3 mb-4 w-full">
+                    <!-- 屬性 1 -->
+                    <div id="type-1-badge" class="flex-1 py-3 rounded-xl text-white font-bold text-center text-lg shadow-md uppercase tracking-wide">
+                        Fire
+                    </div>
+                    <span class="text-gray-400 font-bold">+</span>
+                    <!-- 屬性 2 -->
+                    <div id="type-2-badge" class="flex-1 py-3 rounded-xl text-white font-bold text-center text-lg shadow-md uppercase tracking-wide">
+                        Flying
+                    </div>
+                </div>
+
+                <!-- 描述 -->
+                <h3 id="result-title" class="text-xl font-bold text-gray-800 mb-2">熱血的自由靈魂</h3>
+                <p id="result-desc" class="text-gray-600 text-sm leading-relaxed text-justify">
+                    這裡會顯示詳細的結果描述...
+                </p>
+            </div>
+
+            <!-- 屬性雷達圖 (簡易版 - 顯示 Top 5) -->
+            <div class="mb-8">
+                <h4 class="text-sm font-bold text-gray-400 mb-3 uppercase">潛在屬性排行</h4>
+                <div id="stats-container" class="space-y-2">
+                    <!-- JS 生成 -->
+                </div>
+            </div>
+
+            <button onclick="location.reload()" class="w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition transform active:scale-95">
+                再測一次
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        // ================= 配置與數據 =================
+
+        // 屬性定義 (中英文對照與簡單描述關鍵字)
+        const TYPES = {
+            Normal: { name: "一般", color: "type-normal", desc: "適應力強、隨和、平衡" },
+            Fire: { name: "火", color: "type-fire", desc: "熱情、行動派、充滿活力" },
+            Water: { name: "水", color: "type-water", desc: "冷靜、包容、靈活" },
+            Electric: { name: "電", color: "type-electric", desc: "機智、快速、充滿靈感" },
+            Grass: { name: "草", color: "type-grass", desc: "溫和、成長、療癒" },
+            Ice: { name: "冰", color: "type-ice", desc: "冷酷、純粹、堅定" },
+            Fighting: { name: "格鬥", color: "type-fighting", desc: "正義、努力、不服輸" },
+            Poison: { name: "毒", color: "type-poison", desc: "策略、神秘、獨特" },
+            Ground: { name: "地面", color: "type-ground", desc: "踏實、穩重、可靠" },
+            Flying: { name: "飛行", color: "type-flying", desc: "自由、無拘無束、樂觀" },
+            Psychic: { name: "超能", color: "type-psychic", desc: "智慧、直覺、精神層面" },
+            Bug: { name: "蟲", color: "type-bug", desc: "勤奮、群體、成長" },
+            Rock: { name: "岩石", color: "type-rock", desc: "堅毅、保守、防禦" },
+            Ghost: { name: "幽靈", color: "type-ghost", desc: "難以捉摸、惡作劇、深沉" },
+            Dragon: { name: "龍", color: "type-dragon", desc: "威嚴、強大、自尊" },
+            Dark: { name: "惡", color: "type-dark", desc: "現實、機靈、個人主義" },
+            Steel: { name: "鋼", color: "type-steel", desc: "鋼鐵意志、冷靜、防衛" },
+            Fairy: { name: "妖精", color: "type-fairy", desc: "善良、純真、魅力" }
+        };
+
+        // 80道題庫
+        // 為了節省代碼空間同時保持邏輯，每個選項對應 1-2 個屬性加分
+        const RAW_QUESTIONS = [
+            { q: "週末沒事做時，你通常會選擇？", a: [{t:"在家睡覺或追劇", s:["Normal", "Snorlax"]}, {t:"出門找朋友聚會", s:["Fire", "Electric"]}, {t:"去書店或安靜的地方", s:["Psychic", "Grass"]}, {t:"去健身或運動", s:["Fighting", "Rock"]}] },
+            { q: "遇到不講理的人，你的第一反應是？", a: [{t:"直接據理力爭", s:["Fire", "Fighting"]}, {t:"冷笑不語，心裡記上一筆", s:["Dark", "Ghost"]}, {t:"試著理解對方的想法", s:["Psychic", "Water"]}, {t:"覺得麻煩，想趕快離開", s:["Flying", "Ice"]}] },
+            { q: "如果可以擁有一種超能力，你想要？", a: [{t:"控制時間", s:["Dragon", "Psychic"]}, {t:"隱形", s:["Ghost", "Dark"]}, {t:"飛行", s:["Flying", "Dragon"]}, {t:"讀心術", s:["Fairy", "Psychic"]}] },
+            { q: "在團隊合作中，你通常扮演什麼角色？", a: [{t:"發號施令的領導者", s:["Dragon", "Fire"]}, {t:"協調大家的潤滑劑", s:["Water", "Fairy"]}, {t:"默默做事的執行者", s:["Ground", "Steel"]}, {t:"提出創意的點子王", s:["Electric", "Bug"]}] },
+            { q: "看到朋友心情不好，你會？", a: [{t:"帶他去吃好吃的", s:["Fairy", "Normal"]}, {t:"靜靜陪著他", s:["Water", "Grass"]}, {t:"幫他分析問題解決方案", s:["Steel", "Psychic"]}, {t:"講笑話逗他開心", s:["Electric", "Flying"]}] },
+            { q: "去遊樂園，你第一個想玩的是？", a: [{t:"最刺激的雲霄飛車", s:["Fire", "Electric"]}, {t:"鬼屋", s:["Ghost", "Dark"]}, {t:"旋轉木馬", s:["Fairy", "Normal"]}, {t:"摩天輪", s:["Flying", "Romance"]}] },
+            { q: "遇到困難的任務，你會？", a: [{t:"燃起鬥志，立刻開始", s:["Fighting", "Fire"]}, {t:"先制定詳細計畫", s:["Steel", "Psychic"]}, {t:"尋找夥伴一起幫忙", s:["Bug", "Water"]}, {t:"先拖延一下再說", s:["Normal", "Ground"]}] },
+            { q: "你比較喜歡哪種天氣？", a: [{t:"大晴天", s:["Fire", "Grass"]}, {t:"下雨天", s:["Water", "Ice"]}, {t:"陰天或起霧", s:["Ghost", "Dark"]}, {t:"大風天", s:["Flying", "Dragon"]}] },
+            { q: "如果穿越到異世界，你希望你的職業是？", a: [{t:"勇者騎士", s:["Fighting", "Steel"]}, {t:"神秘法師", s:["Psychic", "Magic"]}, {t:"森林遊俠", s:["Grass", "Ground"]}, {t:"賞金獵人", s:["Dark", "Poison"]}] },
+            { q: "對於「承諾」，你的看法是？", a: [{t:"說到做到，絕不食言", s:["Rock", "Ground"]}, {t:"視情況而定", s:["Water", "Flying"]}, {t:"是一種責任", s:["Steel", "Dragon"]}, {t:"有時候是沈重的負擔", s:["Ghost", "Ice"]}] },
+            // ... (為了滿足80題，我將生成更多樣化的情境題目，涵蓋不同維度)
+            
+            // 社交類
+            { q: "派對上你通常在哪裡？", a: [{t:"舞池中央", s:["Fire", "Electric"]}, {t:"角落觀察大家", s:["Ghost", "Psychic"]}, {t:"負責拿食物和飲料", s:["Grass", "Normal"]}, {t:"跟每個人都在聊天", s:["Fairy", "Flying"]}] },
+            { q: "收到不喜歡的禮物，你會？", a: [{t:"還是表現得很開心", s:["Fairy", "Water"]}, {t:"尷尬但不失禮貌的微笑", s:["Normal", "Ice"]}, {t:"直接說這不適合我", s:["Steel", "Rock"]}, {t:"想辦法轉送給別人", s:["Dark", "Poison"]}] },
+            { q: "朋友遲到了半小時，你會？", a: [{t:"非常生氣", s:["Fire", "Dragon"]}, {t:"擔心他是不是出事了", s:["Grass", "Water"]}, {t:"無所謂，我也常遲到", s:["Flying", "Normal"]}, {t:"利用時間做自己的事", s:["Psychic", "Steel"]}] },
+            
+            // 工作/學習類
+            { q: "面對枯燥重複的工作，你會？", a: [{t:"堅持做完，這是責任", s:["Steel", "Ground"]}, {t:"想辦法優化流程變快", s:["Electric", "Psychic"]}, {t:"邊做邊抱怨", s:["Dark", "Poison"]}, {t:"分心去做別的事", s:["Flying", "Fairy"]}] },
+            { q: "老師或老闆指出了你的錯誤，你會？", a: [{t:"馬上承認並改進", s:["Fighting", "Grass"]}, {t:"心裡不服氣但嘴上不說", s:["Fire", "Rock"]}, {t:"詳細解釋原因", s:["Psychic", "Steel"]}, {t:"覺得很丟臉", s:["Ghost", "Water"]}] },
+            { q: "考試前一晚，你通常在？", a: [{t:"拼命抱佛腳", s:["Fighting", "Fire"]}, {t:"早就準備好了，早睡", s:["Psychic", "Dragon"]}, {t:"放棄治療，去玩", s:["Flying", "Normal"]}, {t:"焦慮到睡不著", s:["Ghost", "Bug"]}] },
+
+            // 衝突類
+            { q: "有人插隊，你會？", a: [{t:"大聲喝斥", s:["Fire", "Dragon"]}, {t:"拍拍他肩膀提醒", s:["Fighting", "Ground"]}, {t:"瞪他一眼", s:["Ice", "Dark"]}, {t:"默默忍受", s:["Normal", "Grass"]}] },
+            { q: "被誤解時，你會？", a: [{t:"一定要解釋清楚", s:["Steel", "Psychic"]}, {t:"清者自清，不解釋", s:["Ice", "Water"]}, {t:"感到很受傷", s:["Fairy", "Ghost"]}, {t:"用行動證明", s:["Rock", "Fighting"]}] },
+
+            // 興趣與生活
+            { q: "喜歡哪種風格的房間？", a: [{t:"極簡乾淨", s:["Ice", "Steel"]}, {t:"充滿植物與陽光", s:["Grass", "Bug"]}, {t:"溫馨堆滿雜物", s:["Normal", "Ground"]}, {t:"神秘暗色調", s:["Dark", "Ghost"]}] },
+            { q: "吃飯時，喜歡嘗試新餐廳嗎？", a: [{t:"喜歡，越怪越好", s:["Poison", "Ghost"]}, {t:"喜歡，找熱門的", s:["Fire", "Electric"]}, {t:"偶爾嘗試", s:["Water", "Flying"]}, {t:"不喜歡，只去習慣的店", s:["Rock", "Ground"]}] },
+            { q: "看恐怖片時的反應？", a: [{t:"尖叫連連", s:["Fairy", "Normal"]}, {t:"面無表情", s:["Ice", "Steel"]}, {t:"研究鬼在哪裡", s:["Psychic", "Dark"]}, {t:"保護旁邊的人", s:["Fighting", "Rock"]}] },
+            { q: "旅行時喜歡？", a: [{t:"安排滿滿的行程", s:["Electric", "Fighting"]}, {t:"走到哪玩到哪", s:["Flying", "Water"]}, {t:"只待在飯店放鬆", s:["Snorlax", "Normal"]}, {t:"去歷史古蹟", s:["Rock", "Ground"]}] },
+            
+            // 抽象/幻想
+            { q: "如果你是動物，你覺得自己是？", a: [{t:"獅子或老虎", s:["Fire", "Dragon"]}, {t:"貓頭鷹", s:["Psychic", "Flying"]}, {t:"海豚", s:["Water", "Fairy"]}, {t:"狼", s:["Ice", "Dark"]}] },
+            { q: "覺得世界是？", a: [{t:"充滿挑戰的競技場", s:["Fighting", "Fire"]}, {t:"充滿謎團的迷宮", s:["Psychic", "Ghost"]}, {t:"溫暖的花園", s:["Grass", "Fairy"]}, {t:"有秩序的機械", s:["Steel", "Rock"]}] },
+            { q: "你比較相信？", a: [{t:"科學與數據", s:["Steel", "Electric"]}, {t:"直覺與命運", s:["Psychic", "Fairy"]}, {t:"力量與實力", s:["Fighting", "Dragon"]}, {t:"經驗與傳統", s:["Ground", "Rock"]}] },
+            
+            // 更多隨機情境 (補足數量)
+            { q: "手機沒電了且沒帶行動電源，你會？", a: [{t:"極度焦慮", s:["Electric", "Ghost"]}, {t:"剛好享受離線時光", s:["Grass", "Normal"]}, {t:"到處借充電器", s:["Fire", "Water"]}, {t:"早就開省電模式了", s:["Steel", "Ice"]}] },
+            { q: "在路上看到一百塊，你會？", a: [{t:"撿起來自己用", s:["Dark", "Poison"]}, {t:"交給警察或捐出去", s:["Law", "Fairy"]}, {t:"看看四周有沒有人", s:["Psychic", "Ghost"]}, {t:"無視走過", s:["Ice", "Rock"]}] },
+            { q: "最討厭哪種人？", a: [{t:"虛偽的人", s:["Fire", "Fighting"]}, {t:"笨蛋", s:["Psychic", "Electric"]}, {t:"粗魯的人", s:["Fairy", "Grass"]}, {t:"軟弱的人", s:["Dark", "Steel"]}] },
+            { q: "喜歡什麼樣的音樂？", a: [{t:"重金屬或搖滾", s:["Rock", "Electric"]}, {t:"古典樂", s:["Psychic", "Water"]}, {t:"流行歌", s:["Fairy", "Normal"]}, {t:"饒舌", s:["Dark", "Fire"]}] },
+            { q: "深夜睡不著會做什麼？", a: [{t:"滑手機到天亮", s:["Electric", "Ghost"]}, {t:"起來吃宵夜", s:["Normal", "Bug"]}, {t:"思考人生", s:["Psychic", "Ice"]}, {t:"做運動", s:["Fighting", "Dragon"]}] },
+            { q: "選一種武器？", a: [{t:"劍", s:["Steel", "Fighting"]}, {t:"弓箭", s:["Flying", "Grass"]}, {t:"魔法杖", s:["Psychic", "Fairy"]}, {t:"毒藥", s:["Poison", "Dark"]}] },
+            { q: "覺得自己更有？", a: [{t:"爆發力", s:["Fire", "Electric"]}, {t:"耐力", s:["Ground", "Steel"]}, {t:"觀察力", s:["Psychic", "Ghost"]}, {t:"親和力", s:["Water", "Normal"]}] },
+            { q: "喜歡獨處還是群體？", a: [{t:"絕對獨處", s:["Ice", "Dark"]}, {t:"喜歡小團體", s:["Water", "Grass"]}, {t:"喜歡大場面", s:["Fire", "Dragon"]}, {t:"看心情", s:["Flying", "Ghost"]}] },
+            { q: "如果明天是世界末日？", a: [{t:"狂歡最後一天", s:["Fire", "Electric"]}, {t:"跟家人在一起", s:["Grass", "Ground"]}, {t:"試圖拯救世界", s:["Fighting", "Steel"]}, {t:"睡覺", s:["Normal", "Snorlax"]}] },
+            { q: "你認為成功需要？", a: [{t:"運氣", s:["Fairy", "Flying"]}, {t:"努力", s:["Fighting", "Ground"]}, {t:"天賦", s:["Dragon", "Psychic"]}, {t:"手段", s:["Dark", "Poison"]}] },
+            { q: "被困在無人島，你先做什麼？", a: [{t:"生火", s:["Fire", "Survival"]}, {t:"找水源", s:["Water", "Grass"]}, {t:"蓋房子", s:["Ground", "Rock"]}, {t:"探索地形", s:["Flying", "Bug"]}] },
+            { q: "你喜歡競爭嗎？", a: [{t:"非常喜歡，想贏", s:["Fighting", "Dragon"]}, {t:"還好，不強求", s:["Water", "Grass"]}, {t:"不喜歡，壓力大", s:["Normal", "Fairy"]}, {t:"只跟自己比", s:["Steel", "Psychic"]}] },
+            { q: "看到可愛的小動物？", a: [{t:"馬上衝過去摸", s:["Fairy", "Electric"]}, {t:"遠遠看著微笑", s:["Grass", "Water"]}, {t:"沒什麼感覺", s:["Ice", "Rock"]}, {t:"怕牠咬我", s:["Ghost", "Bug"]}] },
+            { q: "覺得自己個性像？", a: [{t:"夏天", s:["Fire", "Grass"]}, {t:"秋天", s:["Ground", "Flying"]}, {t:"冬天", s:["Ice", "Steel"]}, {t:"春天", s:["Fairy", "Bug"]}] },
+            { q: "買東西時你是？", a: [{t:"衝動購物", s:["Fire", "Electric"]}, {t:"比價半天", s:["Psychic", "Ground"]}, {t:"看順眼就買", s:["Water", "Flying"]}, {t:"只買必需品", s:["Steel", "Rock"]}] },
+            { q: "你更擅長？", a: [{t:"說服別人", s:["Fairy", "Psychic"]}, {t:"保護別人", s:["Steel", "Rock"]}, {t:"攻擊對手", s:["Fighting", "Fire"]}, {t:"隱藏自己", s:["Ghost", "Dark"]}] },
+            { q: "對於「規則」？", a: [{t:"是用來打破的", s:["Dark", "Flying"]}, {t:"必須嚴格遵守", s:["Steel", "Rock"]}, {t:"可以變通", s:["Water", "Psychic"]}, {t:"不知道有規則", s:["Normal", "Slowpoke"]}] },
+            { q: "喜歡什麼顏色的衣服？", a: [{t:"黑白灰", s:["Steel", "Dark"]}, {t:"鮮豔亮色", s:["Fire", "Electric"]}, {t:"大地色系", s:["Ground", "Grass"]}, {t:"夢幻粉嫩", s:["Fairy", "Psychic"]}] },
+            { q: "朋友向你借錢？", a: [{t:"二話不說借他", s:["Water", "Fairy"]}, {t:"問清楚用途", s:["Steel", "Psychic"]}, {t:"拒絕，談錢傷感情", s:["Rock", "Dark"]}, {t:"我也沒錢", s:["Normal", "Ghost"]}] },
+            { q: "做決定的速度？", a: [{t:"非常快", s:["Electric", "Fire"]}, {t:"猶豫不決", s:["Water", "Psychic"]}, {t:"很慢但很堅定", s:["Ground", "Rock"]}, {t:"看心情", s:["Flying", "Ghost"]}] },
+            { q: "喜歡爬山還是去海邊？", a: [{t:"爬山", s:["Ground", "Rock"]}, {t:"海邊", s:["Water", "Flying"]}, {t:"都不喜歡，在家", s:["Ghost", "Psychic"]}, {t:"都喜歡", s:["Normal", "Grass"]}] },
+            { q: "遇到不公義的事？", a: [{t:"挺身而出", s:["Fighting", "Fire"]}, {t:"默默蒐證", s:["Psychic", "Dark"]}, {t:"網路爆料", s:["Electric", "Bug"]}, {t:"保護好自己為先", s:["Steel", "Normal"]}] },
+            { q: "你覺得自己是？", a: [{t:"樂觀主義者", s:["Fire", "Fairy"]}, {t:"悲觀主義者", s:["Ghost", "Ice"]}, {t:"現實主義者", s:["Ground", "Rock"]}, {t:"理想主義者", s:["Flying", "Psychic"]}] },
+            { q: "最怕什麼？", a: [{t:"孤單", s:["Fairy", "Water"]}, {t:"失敗", s:["Fighting", "Dragon"]}, {t:"被背叛", s:["Dark", "Ghost"]}, {t:"無聊", s:["Electric", "Fire"]}] },
+            { q: "喜歡的甜點？", a: [{t:"巧克力", s:["Dark", "Romance"]}, {t:"水果塔", s:["Grass", "Fairy"]}, {t:"冰淇淋", s:["Ice", "Water"]}, {t:"不吃甜食", s:["Fighting", "Rock"]}] },
+            { q: "跟人吵架後？", a: [{t:"主動道歉", s:["Water", "Grass"]}, {t:"死不低頭", s:["Steel", "Dragon"]}, {t:"冷戰", s:["Ice", "Ghost"]}, {t:"裝沒事", s:["Normal", "Flying"]}] },
+            { q: "相信星座或算命嗎？", a: [{t:"非常相信", s:["Psychic", "Fairy"]}, {t:"參考看看", s:["Water", "Normal"]}, {t:"完全不信", s:["Steel", "Science"]}, {t:"我命由我不由天", s:["Fighting", "Dragon"]}] },
+            { q: "手機桌布是？", a: [{t:"風景照", s:["Grass", "Flying"]}, {t:"家人或朋友", s:["Normal", "Fairy"]}, {t:"偶像或動漫", s:["Electric", "Fire"]}, {t:"預設圖片", s:["Steel", "Rock"]}] },
+            { q: "喜歡做計畫嗎？", a: [{t:"喜歡，控制狂", s:["Psychic", "Steel"]}, {t:"不喜歡，隨性", s:["Flying", "Water"]}, {t:"做了也不執行", s:["Normal", "Ground"]}, {t:"只做大方向", s:["Fire", "Dragon"]}] },
+            { q: "覺得自己最大的優點？", a: [{t:"善良", s:["Fairy", "Grass"]}, {t:"勇敢", s:["Fighting", "Fire"]}, {t:"聰明", s:["Psychic", "Electric"]}, {t:"堅強", s:["Steel", "Rock"]}] },
+            // ... 重複類似結構直到足夠隨機性
+        ];
+
+        // 擴充題目以確保足夠隨機性 (簡單複製並微調屬性權重概念，實際應用中應撰寫更多獨特題目)
+        // 為了代碼簡潔，這裡使用基礎題目集。上述約55題，我們透過程式邏輯確保它們能運作良好。
+        // 為了達到80題的目標，我們將添加更多基於情境的變體。
+        
+        const EXTRA_QUESTIONS = [
+           { q: "在森林迷路會？", a: [{t:"爬到樹上看", s:["Grass", "Bug"]}, {t:"沿著河流走", s:["Water", "Ground"]}, {t:"原地等待救援", s:["Rock", "Steel"]}, {t:"大聲呼救", s:["Normal", "Loud"]}] },
+           { q: "喜歡什麼樣的遊戲？", a: [{t:"動作射擊", s:["Fire", "Electric"]}, {t:"策略解謎", s:["Psychic", "Dark"]}, {t:"經營養成", s:["Grass", "Fairy"]}, {t:"格鬥競技", s:["Fighting", "Dragon"]}] },
+           { q: "早上起床第一件事？", a: [{t:"看手機", s:["Electric", "Psychic"]}, {t:"喝水", s:["Water", "Health"]}, {t:"賴床", s:["Snorlax", "Normal"]}, {t:"伸懶腰", s:["Cat", "Fairy"]}] },
+           { q: "如果會魔法，想學？", a: [{t:"火球術", s:["Fire", "Destruction"]}, {t:"治癒術", s:["Fairy", "Grass"]}, {t:"防護罩", s:["Psychic", "Steel"]}, {t:"召喚術", s:["Ghost", "Dark"]}] },
+           { q: "最想去的國家？", a: [{t:"熱帶島嶼", s:["Water", "Grass"]}, {t:"歷史古國", s:["Ground", "Rock"]}, {t:"科技大城", s:["Electric", "Steel"]}, {t:"極地", s:["Ice", "Water"]}] },
+           { q: "搭電梯遇到鄰居？", a: [{t:"主動聊天", s:["Fire", "Normal"]}, {t:"點頭微笑", s:["Water", "Fairy"]}, {t:"假裝看手機", s:["Ghost", "Dark"]}, {t:"盯著樓層燈看", s:["Steel", "Rock"]}] },
+           { q: "喜歡的季節？", a: [{t:"春", s:["Grass", "Fairy"]}, {t:"夏", s:["Fire", "Electric"]}, {t:"秋", s:["Ground", "Flying"]}, {t:"冬", s:["Ice", "Dark"]}] },
+           { q: "如果有時光機？", a: [{t:"去未來", s:["Steel", "Psychic"]}, {t:"回過去", s:["Ghost", "Dragon"]}, {t:"不使用", s:["Normal", "Grass"]}, {t:"賣掉它", s:["Dark", "Poison"]}] },
+           { q: "看到排隊名店？", a: [{t:"跟著排", s:["Normal", "Water"]}, {t:"不屑一顧", s:["Dark", "Rock"]}, {t:"下次再來", s:["Grass", "Ground"]}, {t:"找代排", s:["Psychic", "Money"]}] },
+           { q: "喜歡的運動？", a: [{t:"跑步/游泳", s:["Water", "Flying"]}, {t:"球類", s:["Fire", "Electric"]}, {t:"健身重訓", s:["Fighting", "Rock"]}, {t:"瑜珈", s:["Psychic", "Grass"]}] },
+           { q: "被批評時？", a: [{t:"反擊", s:["Fire", "Fighting"]}, {t:"反省", s:["Water", "Grass"]}, {t:"無視", s:["Steel", "Ghost"]}, {t:"哭", s:["Fairy", "Water"]}] },
+           { q: "遇到蟑螂？", a: [{t:"尖叫逃跑", s:["Fairy", "Psychic"]}, {t:"拿拖鞋打", s:["Fighting", "Normal"]}, {t:"用殺蟲劑", s:["Poison", "Chemical"]}, {t:"抓起來", s:["Bug", "Dark"]}] },
+           { q: "喜歡看書嗎？", a: [{t:"書蟲", s:["Psychic", "Grass"]}, {t:"只看漫畫", s:["Fire", "Electric"]}, {t:"看實用書", s:["Steel", "Ground"]}, {t:"不看書", s:["Fighting", "Flying"]}] },
+           { q: "對未來的看法？", a: [{t:"充滿希望", s:["Light", "Fairy"]}, {t:"走一步算一步", s:["Water", "Normal"]}, {t:"有點擔心", s:["Ghost", "Ice"]}, {t:"不想面對", s:["Dark", "Ground"]}] },
+           { q: "覺得自己像哪種飲料？", a: [{t:"可樂", s:["Electric", "Sugar"]}, {t:"茶", s:["Grass", "Water"]}, {t:"黑咖啡", s:["Dark", "Poison"]}, {t:"牛奶", s:["Normal", "Fairy"]}] },
+           { q: "想養什麼寵物？", a: [{t:"狗", s:["Fire", "Ground"]}, {t:"貓", s:["Dark", "Psychic"]}, {t:"鳥", s:["Flying", "Wind"]}, {t:"爬蟲類", s:["Dragon", "Poison"]}] },
+           { q: "遇到乞丐？", a: [{t:"給錢", s:["Fairy", "Normal"]}, {t:"買食物給他", s:["Grass", "Food"]}, {t:"快速通過", s:["Steel", "Ice"]}, {t:"觀察真假", s:["Psychic", "Dark"]}] },
+           { q: "喜歡聽鬼故事嗎？", a: [{t:"超愛", s:["Ghost", "Dark"]}, {t:"又怕又愛看", s:["Fairy", "Psychic"]}, {t:"完全不敢", s:["Normal", "Water"]}, {t:"覺得很假", s:["Steel", "Rock"]}] },
+           { q: "最喜歡的科目？", a: [{t:"體育", s:["Fighting", "Fire"]}, {t:"數學/理化", s:["Psychic", "Electric"]}, {t:"美術/音樂", s:["Fairy", "Water"]}, {t:"歷史/地理", s:["Ground", "Rock"]}] },
+           { q: "相信外星人嗎？", a: [{t:"一定有", s:["Psychic", "Space"]}, {t:"不可能", s:["Ground", "Reality"]}, {t:"我就是", s:["Dragon", "Weird"]}, {t:"沒興趣", s:["Normal", "Lazy"]}] },
+           { q: "做錯事會？", a: [{t:"內疚很久", s:["Water", "Ghost"]}, {t:"想辦法彌補", s:["Grass", "Steel"]}, {t:"怪罪別人", s:["Dark", "Fire"]}, {t:"笑笑帶過", s:["Flying", "Electric"]}] },
+           { q: "喜歡熬夜嗎？", a: [{t:"夜貓子", s:["Dark", "Ghost"]}, {t:"早睡早起", s:["Grass", "Sun"]}, {t:"不得不熬", s:["Steel", "Work"]}, {t:"偶爾", s:["Normal", "Water"]}] },
+           { q: "對AI的看法？", a: [{t:"會毀滅人類", s:["Fighting", "Fire"]}, {t:"好用工具", s:["Steel", "Electric"]}, {t:"沒感情", s:["Ice", "Psychic"]}, {t:"無所謂", s:["Normal", "Ground"]}] },
+           { q: "喜歡雨天嗎？", a: [{t:"討厭，濕搭搭", s:["Fire", "Ground"]}, {t:"喜歡，很浪漫", s:["Water", "Fairy"]}, {t:"喜歡，很涼", s:["Ice", "Wind"]}, {t:"沒感覺", s:["Normal", "Rock"]}] },
+           { q: "去KTV必點？", a: [{t:"嗨歌", s:["Electric", "Fire"]}, {t:"情歌", s:["Water", "Fairy"]}, {t:"老歌", s:["Ground", "Rock"]}, {t:"負責吃東西", s:["Normal", "Snorlax"]}] },
+        ];
+
+        // 合併題庫
+        const FULL_QUESTION_POOL = [...RAW_QUESTIONS, ...EXTRA_QUESTIONS];
+
+        // 狀態變數
+        let currentQuestions = [];
+        let currentQuestionIndex = 0;
+        let scores = {};
+
+        // 初始化分數
+        function initScores() {
+            scores = {};
+            Object.keys(TYPES).forEach(type => scores[type] = 0);
+        }
+
+        // 洗牌算法 (Fisher-Yates)
+        function shuffle(array) {
+            let currentIndex = array.length, randomIndex;
+            while (currentIndex != 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
+
+        // 開始遊戲
+        function startGame() {
+            initScores();
+            // 隨機抽取30題
+            const shuffled = shuffle([...FULL_QUESTION_POOL]);
+            currentQuestions = shuffled.slice(0, 30);
+            currentQuestionIndex = 0;
+
+            // 切換畫面
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            
+            renderQuestion();
+        }
+
+        // 渲染題目
+        function renderQuestion() {
+            const qData = currentQuestions[currentQuestionIndex];
+            
+            // 更新進度條
+            const progress = ((currentQuestionIndex) / 30) * 100;
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+            document.getElementById('progress-text').innerText = `Question ${currentQuestionIndex + 1}/30`;
+            document.getElementById('progress-percent').innerText = `${Math.round(progress)}%`;
+
+            // 更新題目文字
+            const qText = document.getElementById('question-text');
+            qText.classList.remove('fade-in');
+            void qText.offsetWidth; // trigger reflow
+            qText.classList.add('fade-in');
+            qText.innerText = qData.q;
+
+            // 更新選項
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+            
+            qData.a.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'w-full text-left bg-white border-2 border-gray-200 hover:border-red-400 hover:bg-red-50 text-gray-700 font-medium py-4 px-6 rounded-xl transition duration-200 shadow-sm flex items-center group active:scale-98';
+                
+                // 選項內部結構
+                btn.innerHTML = `
+                    <div class="w-4 h-4 rounded-full border-2 border-gray-300 mr-4 group-hover:border-red-500 group-hover:bg-red-500 transition-colors"></div>
+                    <span class="text-lg">${opt.t}</span>
+                `;
+
+                btn.onclick = () => handleAnswer(opt.s);
+                container.appendChild(btn);
+            });
+        }
+
+        // 處理回答
+        function handleAnswer(targetTypes) {
+            // 計分邏輯
+            targetTypes.forEach(type => {
+                // 有些選項的標籤可能不是標準屬性 (如 "Snorlax")，我們只計入標準屬性
+                // 或者我們可以做一些模糊映射
+                if (scores.hasOwnProperty(type)) {
+                    scores[type] += 2; // 主屬性加分
+                } else {
+                    // 如果是特殊標籤，隨機分配給相關屬性以增加變數
+                    if (type === "Snorlax") scores["Normal"] += 1;
+                    if (type === "Magic") scores["Psychic"] += 1;
+                    if (type === "Romance") scores["Fairy"] += 1;
+                    if (type === "Survival") scores["Fire"] += 1;
+                    if (type === "Law") scores["Steel"] += 1;
+                    if (type === "Money") scores["Dark"] += 1;
+                    // ... 可以添加更多映射，這裡簡化
+                }
+            });
+
+            // 下一題或結束
+            currentQuestionIndex++;
+            if (currentQuestionIndex < 30) {
+                renderQuestion();
+            } else {
+                finishQuiz();
+            }
+        }
+
+        // 結束測驗
+        function finishQuiz() {
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('loading-screen').classList.remove('hidden');
+
+            // 模擬計算延遲
+            setTimeout(() => {
+                calculateAndShowResult();
+            }, 1500);
+        }
+
+        // 計算並顯示結果
+        function calculateAndShowResult() {
+            // 排序分數
+            const sortedTypes = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+            
+            // 取前兩名
+            let type1 = sortedTypes[0][0];
+            let type2 = sortedTypes[1][0];
+
+            // 防止同分且同一屬性的邊緣情況（雖然雙屬性可以是單一的，但為了趣味性我們儘量給兩個）
+            if (sortedTypes[0][1] === 0) {
+                // 玩家幾乎沒選到有效選項（極不可能），給隨機
+                type1 = "Normal";
+                type2 = "Flying";
+            }
+
+            // 更新 UI
+            const t1Data = TYPES[type1];
+            const t2Data = TYPES[type2];
+
+            // 設定標籤顏色與文字
+            const b1 = document.getElementById('type-1-badge');
+            const b2 = document.getElementById('type-2-badge');
+            
+            b1.className = `flex-1 py-3 rounded-xl text-white font-bold text-center text-lg shadow-md uppercase tracking-wide ${t1Data.color}`;
+            b1.innerText = t1Data.name;
+            
+            b2.className = `flex-1 py-3 rounded-xl text-white font-bold text-center text-lg shadow-md uppercase tracking-wide ${t2Data.color}`;
+            b2.innerText = t2Data.name;
+
+            // 生成描述標題
+            const titleMap = {
+                "Fire": "熱血", "Water": "柔情", "Grass": "療癒", "Electric": "閃光",
+                "Ice": "高冷", "Fighting": "不屈", "Poison": "致命", "Ground": "堅定",
+                "Flying": "自由", "Psychic": "神祕", "Bug": "蛻變", "Rock": "頑強",
+                "Ghost": "夢幻", "Dragon": "霸氣", "Dark": "孤傲", "Steel": "絕對",
+                "Fairy": "奇蹟", "Normal": "純粹"
+            };
+            
+            let comboTitle = "";
+            if (type1 === type2) {
+                comboTitle = `極致的${titleMap[type1]}之人`;
+            } else {
+                comboTitle = `${titleMap[type1]}與${titleMap[type2]}的完美結合`;
+            }
+            document.getElementById('result-title').innerText = comboTitle;
+
+            // 生成詳細描述
+            document.getElementById('result-desc').innerHTML = `
+                你的靈魂主屬性是 <span class="font-bold text-gray-800">${t1Data.name}</span>，代表著${t1Data.desc}。<br>
+                同時擁有 <span class="font-bold text-gray-800">${t2Data.name}</span> 的副屬性，賦予了你${t2Data.desc}的特質。<br><br>
+                在寶可夢的世界裡，這樣的屬性組合既擁有${type1 === 'Fire' || type1 === 'Fighting' ? '強大的進攻性' : '獨特的生存哲學'}，
+                也能在面對困難時展現出${type2 === 'Steel' || type2 === 'Rock' ? '驚人的防禦力' : '靈活的應變能力'}。
+                你是一個獨一無二的存在！
+            `;
+
+            // 生成雷達圖數據列表 (Top 5)
+            const statsContainer = document.getElementById('stats-container');
+            statsContainer.innerHTML = '';
+            
+            // 找出最大值來算百分比
+            const maxScore = sortedTypes[0][1];
+
+            for(let i=0; i<5; i++) {
+                const typeName = sortedTypes[i][0];
+                const typeScore = sortedTypes[i][1];
+                const percent = maxScore > 0 ? (typeScore / maxScore) * 100 : 0;
+                const tData = TYPES[typeName];
+
+                const row = document.createElement('div');
+                row.className = 'flex items-center text-sm';
+                row.innerHTML = `
+                    <div class="w-16 font-bold text-gray-600 text-right mr-3">${tData.name}</div>
+                    <div class="flex-1 bg-gray-200 rounded-full h-2">
+                        <div class="h-2 rounded-full ${tData.color}" style="width: ${percent}%"></div>
+                    </div>
+                    <div class="w-8 text-right text-gray-400 text-xs">${typeScore}</div>
+                `;
+                statsContainer.appendChild(row);
+            }
+
+            document.getElementById('loading-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+            
+            // 滾動到頂部
+            document.getElementById('app').scrollTo(0,0);
+        }
+
+    </script>
+</body>
+</html>
